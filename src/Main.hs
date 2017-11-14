@@ -62,12 +62,14 @@ joinChatroom joiner@Client{..} rooms name = atomically $ do
      sendResponse ref name = sendMessage joiner (Response $ "JOINED_CHATROOM:"++name++"\nSERVER_IP:0.0.0.0\nPORT:"++show (fromIntegral port) ++ "\nROOM_REF:" ++ show ref ++"\nJOIN_ID:" ++ show (ref+clientID))
 
 leaveChatroom :: Client -> Server -> Int -> IO ()
-leaveChatroom client@Client{..} server roomRef = do
+leaveChatroom client@Client{..} server roomRef = leave' client server roomRef (roomRef+clientID)
+
+leave' :: Client -> Server -> Int -> Int -> IO ()
+leave' client@Client{..} server roomRef joinRef = do
   roomList <- atomically $ readTVar server
   case Map.lookup roomRef roomList of
     Nothing    -> putStrLn "Room does not exist" 
     Just aRoom -> do
-      let joinRef = clientID + roomRef
       atomically $ sendMessage client (Response $ "LEFT_CHATROOM:" ++ show roomRef ++ "\nJOIN_ID:" ++ show joinRef)
       removeUser -- >> sendRoomMessage notification aRoom >> atomically (sendMessage client notification)
       putStrLn $ clientName++" left " ++ (roomName aRoom)
@@ -273,7 +275,7 @@ handleMessage server client@Client{..} message =
 
       [["JOIN_ID:",id],["CLIENT_NAME:",name]] -> do
         putStrLn ("leave room joinref = " ++ id)
-        leaveChatroom client server (read mainArg :: Int)
+        leave' client server (read mainArg :: Int) (read id :: Int)
         putStrLn "chatroom left success"
         return True
 
