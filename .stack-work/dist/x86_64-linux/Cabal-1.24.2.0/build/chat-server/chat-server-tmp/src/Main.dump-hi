@@ -1,10 +1,10 @@
 
 ==================== FINAL INTERFACE ====================
-2017-11-13 20:02:14.827543 UTC
+2017-11-14 11:52:54.437671 UTC
 
 interface main@main:Main 8002
-  interface hash: 4218d03a87195c938cf22bcbcf820d06
-  ABI hash: 2112644d17d1824b87b6b66bd99b170c
+  interface hash: d0bf7766beb1eaa28ce1e535c39015b0
+  ABI hash: de8cac941f636bcacbffca5df4643430
   export-list hash: 1d8844178113375b84745ec90f735c18
   orphan hash: e3f907cc77bbc0eb7e4f425dad3f8e77
   flag hash: 270c8ee255cc931bcb919f6701982426
@@ -372,7 +372,7 @@ c9a94543fac4fa9145895e2973cf766e
   {- Arity: 8,
      Strictness: <L,U><L,U(U)><L,U><L,U><S,U><S,U><S,U><S,U>,
      Inline: [0] -}
-b7895511f02fdb3c4bf423ce7658e8b1
+dd03df2b1c159bc17346f093364ede8b
   $wleaveChatroom ::
     GHC.Base.String
     -> GHC.Types.Int
@@ -382,7 +382,8 @@ b7895511f02fdb3c4bf423ce7658e8b1
     -> GHC.Prim.Int#
     -> GHC.Prim.State# GHC.Prim.RealWorld
     -> (# GHC.Prim.State# GHC.Prim.RealWorld, () #)
-  {- Arity: 6, Strictness: <L,U><L,U(U)><L,1*U(A,U)><S,U><L,U><S,U>,
+  {- Arity: 6,
+     Strictness: <L,U><L,1*U(U)><L,1*U(A,U)><S,U><L,U><S,U>,
      Inline: [0] -}
 6092eb58c2682a871d13f3a46172fb84
   $wnewChatroom ::
@@ -423,7 +424,7 @@ b7895511f02fdb3c4bf423ce7658e8b1
     GHC.Prim.Int#
     -> Data.Map.Base.Map GHC.Types.Int a -> GHC.Base.Maybe a
   {- Arity: 2, HasNoCafRefs, Strictness: <L,U><S,1*U>, Inline: [0] -}
-a45d7a480e36ebf7e12ba83ea901af32
+977d02644ae203f8a60a4e027f082721
   $wremoveClient ::
     GHC.Prim.TVar#
       GHC.Prim.RealWorld (Data.Map.Base.Map GHC.Types.Int Main.Chatroom)
@@ -742,11 +743,11 @@ e546a5d179f7bcb019a2833bfcf07993
 4febe211c27c8b9931d46dc5c3a64fcd
   leaveArgs :: GHC.Types.Int
   {- Strictness: m, Unfolding: (Main.disconnectArgs) -}
-f13f2325612a3fe90d0a0caf633fad17
+3afc0a4e5b87d3000bc5cec089ff7225
   leaveChatroom ::
     Main.Client -> Main.Server -> GHC.Types.Int -> GHC.Types.IO ()
   {- Arity: 4,
-     Strictness: <S,1*U(U,U(U),A,1*U(A,U))><S(S),1*U(U)><S,U(U)><S,U>,
+     Strictness: <S,1*U(U,1*U(U),A,1*U(A,U))><S(S),1*U(U)><S,U(U)><S,U>,
      Unfolding: InlineRule (0, True, True)
                 Main.leaveChatroom1
                   `cast`
@@ -754,7 +755,7 @@ f13f2325612a3fe90d0a0caf633fad17
                  ->_R <Main.Server>_R
                  ->_R <GHC.Types.Int>_R
                  ->_R Sym (GHC.Types.N:IO[0] <()>_R)) -}
-54da9df5cd4c0bce29a02e8763572e0f
+4719916c997b3611beaa56bc13646d63
   leaveChatroom1 ::
     Main.Client
     -> Main.Server
@@ -762,7 +763,7 @@ f13f2325612a3fe90d0a0caf633fad17
     -> GHC.Prim.State# GHC.Prim.RealWorld
     -> (# GHC.Prim.State# GHC.Prim.RealWorld, () #)
   {- Arity: 4,
-     Strictness: <S,1*U(U,U(U),A,1*U(A,U))><S(S),1*U(U)><S,U(U)><S,U>,
+     Strictness: <S,1*U(U,1*U(U),A,1*U(A,U))><S(S),1*U(U)><S,U(U)><S,U>,
      Inline: INLINE[0],
      Unfolding: InlineRule (4, True, False)
                 (\ (w :: Main.Client)
@@ -914,7 +915,7 @@ d84aff28e60d738e6554237d492598d8
 621803e5b2c72bb1075857e68071e8c8
   port :: GHC.Types.Int
   {- HasNoCafRefs, Strictness: m, Unfolding: (GHC.Types.I# 44444#) -}
-4a816273bcb95510588e34d528083223
+b6c3e949f37f6e0d8390c6c8eac77026
   removeClient :: Main.Server -> Main.Client -> GHC.Types.IO ()
   {- Arity: 3, Strictness: <S(S),U(U)><S,1*U(U,U(U),A,U(A,U))><S,U>,
      Unfolding: InlineRule (0, True, True)
@@ -923,7 +924,7 @@ d84aff28e60d738e6554237d492598d8
                 (<Main.Server>_R
                  ->_R <Main.Client>_R
                  ->_R Sym (GHC.Types.N:IO[0] <()>_R)) -}
-b233f4a81d8c06b5a064194734a762c5
+b540af5febec278eb42e7448a7cff0b5
   removeClient1 ::
     Main.Server
     -> Main.Client

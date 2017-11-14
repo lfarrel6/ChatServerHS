@@ -67,7 +67,8 @@ leaveChatroom client@Client{..} server roomRef = do
   case Map.lookup roomRef roomList of
     Nothing    -> putStrLn "Room does not exist" 
     Just aRoom -> do
-      atomically $ sendMessage client (Response $ "LEFT_CHATROOM:" ++ show roomRef ++ "\nJOIN_ID:" ++ (show $ clientID + roomRef)++"\n")
+      let joinRef = clientID + roomRef
+      atomically $ sendMessage client (Response $ "LEFT_CHATROOM:" ++ show roomRef ++ "\nJOIN_ID:" ++ show joinRef)
       removeUser -- >> sendRoomMessage notification aRoom >> atomically (sendMessage client notification)
       putStrLn $ clientName++" left " ++ (roomName aRoom)
       putStrLn $ "removal notif looks like: " ++ (show notification)
@@ -78,7 +79,7 @@ leaveChatroom client@Client{..} server roomRef = do
          mapM_ (\aClient -> sendMessage aClient notification) roomMembers
          let newList = Map.delete (hash clientName) clientList
          writeTVar (members aRoom) newList
-       notification = (Broadcast $ "CHAT:" ++ (show roomRef) ++ "\nJOIN_ID:" ++ (show $ roomRef + clientID) ++ "\nCLIENT_NAME:" ++ clientName ++ "\nMESSAGE:" ++ clientName ++ " has left this chatroom.\n\n")
+       notification = (Broadcast $ "CHAT:" ++ (show roomRef) ++ "\nCLIENT_NAME:" ++ clientName ++ "\nMESSAGE:" ++ clientName ++ " has left this chatroom.\n")
 
 deleteChatroom :: Server -> Int -> IO ()
 deleteChatroom serv ref = atomically $ do 
@@ -264,14 +265,14 @@ handleMessage server client@Client{..} message =
       --join chatroom
 
       [["CLIENT_IP:",_],["PORT:",_],["CLIENT_NAME:",name]] -> do
-        joinChatroom client server mainArg
-        putStrLn ("joined " ++ mainArg)
+        putStrLn ("joining joinRef = " ++ show (clientID + (hash mainArg)))
         let msgLines = "CHAT:"++(show $ (hash mainArg))++"\nCLIENT_NAME:"++clientName++"\nMESSAGE:"++clientName ++ " has joined this chatroom.\n"
-        notifyRoom (hash mainArg) $ Broadcast msgLines
+        joinChatroom client server mainArg >> notifyRoom (hash mainArg) (Broadcast msgLines)
 
       --leave chatroom
 
       [["JOIN_ID:",id],["CLIENT_NAME:",name]] -> do
+        putStrLn ("leave room joinref = " ++ id)
         leaveChatroom client server (read mainArg :: Int)
         putStrLn "chatroom left success"
         return True
