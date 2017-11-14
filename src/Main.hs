@@ -9,6 +9,7 @@ import GHC.Conc
 import Control.Concurrent.Async
 import qualified Data.Map as Map
 import Data.Map (Map)
+import qualified Data.List as List
 import Data.Hashable
 import System.IO
 import Control.Exception
@@ -41,6 +42,13 @@ newChatroom joiner@Client{..} room = do
                   , roomRef  = hash room
                   , members  = clientList
                   }
+
+getChatroom :: Int -> Server -> STM (Maybe Chatroom)
+getChatroom roomRef serv = do
+  rooms <- readTVar serv
+  case Map.lookup roomRef rooms of
+   Nothing -> return Nothing
+   Just x  -> return $ Just x
 
 joinChatroom :: Client -> Server -> String -> IO ()
 joinChatroom joiner@Client{..} rooms name = atomically $ do
@@ -319,10 +327,11 @@ removeClient :: Server -> Client -> IO ()
 removeClient serv toRemove@Client{..} = do
   rooms <- atomically $ readTVar serv
   let roomNames = Prelude.map (\room -> roomName room) (Map.elems rooms)
-  putStrLn $ show roomNames
-  mapM_ (\room -> kick room) roomNames
+  let roomNames = List.sort roomNames
+  putStrLn $ show $ roomNames
+  mapM_ (\room -> kickFrom room) roomNames
   where
-   kick room = do 
+   kickFrom room = do 
      leaveChatroom toRemove serv (hash room) >> putStrLn (clientName ++ " removed from " ++ room)
 -- >>
 
