@@ -212,8 +212,9 @@ talk handle server = do
                Nothing    -> putStrLn ("room does not exist " ++ (show roomRef)) >> return True
                Just aRoom -> sendRoomMessage msg aRoom >> return True
             endClient client = do
-              putStrLn "Client is being deleted entirely"
-              removeClient server client >> return ()
+              putStrLn "Client deleted entirely"
+              return ()
+              --removeClient server client
        _ -> output "Unreconized command" >> debug op >> readOp
        where
         output = hPutStrLn handle 
@@ -243,6 +244,7 @@ runClient serv client@Client{..} = do
          send cmdLineArgs roomRef
        ["DISCONNECT:",ip]          -> do
          cmdLineArgs <- getArgs (disconnectArgs-1)
+         putStrLn "disconnect command"
          send cmdLineArgs ip
        ["CHAT:",roomRef]           -> do
          cmdLineArgs <- getArgs (sendMsgArgs-1)
@@ -289,7 +291,7 @@ handleMessage server client@Client{..} message =
 
       --disconnect
 
-      [["PORT:",_],["CLIENT_NAME:",name]] -> return False
+      [["PORT:",_],["CLIENT_NAME:",name]] -> putStrLn "disconnecting user" >> removeClient server client >> return False
 
       --send message
 
@@ -326,12 +328,16 @@ handleMessage server client@Client{..} message =
 removeClient :: Server -> Client -> IO ()
 removeClient serv toRemove@Client{..} = do
   rooms <- atomically $ readTVar serv
+  putStrLn "in remove client, server read"
   let roomNames = Prelude.map (\room -> roomName room) (Map.elems rooms)
-  let roomNames = List.sort roomNames
-  putStrLn $ show $ roomNames
+  putStrLn "roomNames obtained"
+  putStrLn $ show roomNames
+  --let roomNames = List.sort roomNames
+  --putStrLn "sorted"
   mapM_ (\room -> kickFrom room) roomNames
   where
    kickFrom room = do 
+     putStrLn ("removing " ++ clientName ++ " from " ++ room)
      leaveChatroom toRemove serv (hash room) >> putStrLn (clientName ++ " removed from " ++ room)
 -- >>
 
