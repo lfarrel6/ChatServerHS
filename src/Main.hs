@@ -80,6 +80,7 @@ leave' client@Client{..} server roomRef joinRef = do
     Just aRoom -> do
       atomically $ sendMessage client (Response $ "LEFT_CHATROOM:" ++ show roomRef ++ "\nJOIN_ID:" ++ show joinRef)
       removeUser -- >> sendRoomMessage notification aRoom >> atomically (sendMessage client notification)
+      putStrLn ("removing " ++ clientName ++ "from room, messages sent")
       putStrLn $ clientName++" left " ++ (roomName aRoom)
       putStrLn $ "removal notif looks like: " ++ (show notification)
       where
@@ -185,9 +186,10 @@ talk handle server = do
   where
    readOp = do
      op <- hGetLine handle
+     putStrLn $ op ++ " received pre client creation"
      case words op of
-       ["HELO",_] -> do
-         output $ "HELO text\nIP:134.226.44.141\nPort:" ++ (show port) ++ "\nStudentID:14317869\n"
+       ["HELO","BASE_TEST"] -> do
+         echo $ "HELO text\nIP:134.226.44.141\nPort:" ++ (show port) ++ "\nStudentID:14317869\n"
          readOp
        ["KILL_SERVICE"] -> output "RIP" >> return ()
        ["JOIN_CHATROOM:",roomName] -> do
@@ -219,6 +221,11 @@ talk handle server = do
        where
         output = hPutStrLn handle 
         getArgs n = replicateM n $ hGetLine handle
+        echo s = do
+                  putStrLn $ s ++ " being echoed"
+                  output s
+                  input <- hGetLine handle
+                  echo input
 
 -- >>
 
@@ -320,7 +327,7 @@ handleMessage server client@Client{..} message =
            Nothing    -> putStrLn ("room does not exist " ++ (show roomRef)) >> return True
            Just aRoom -> sendRoomMessage msg aRoom >> return True
   where
-   output s = do putStrLn ("user receiving\\/\n" ++ s) >> hPutStrLn clientHandle s; return True
+   output s = do putStrLn (clientName ++ " receiving\\/\n" ++ s) >> hPutStrLn clientHandle s; return True
 -- >>
 
 -- <<removeClient
