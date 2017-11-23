@@ -4,12 +4,14 @@
 # Running The Server
 
 #### Run using stack 
-[Get Stack!](https://docs.haskellstack.org/en/stable/README/)
 
-Get a local GHC compiler: `stack setup`
+* [Get Stack!](https://docs.haskellstack.org/en/stable/README/)
 
-Compile: `bash compile.sh`
-Run the Server on the port number of your choice: `bash start.sh <port number>`
+* Get a local GHC compiler: `stack setup`
+
+* Compile: `bash compile.sh`
+
+* Run the Server on the port number of your choice: `bash start.sh <port number>`
 
 ### Current test score: 64
 ### I do not feel that this reflects the standard of the Chat Server.
