@@ -16,12 +16,13 @@ import Control.Exception
 import Network
 import Control.Monad
 import Text.Printf
+import System.Environment
 
 -- ________________
 -- Data Structures 
 -- ________________
 
-import Chatroom
+import Chatroom (hiding port)
 import Client
 import Messaging
 
@@ -221,6 +222,8 @@ handleMessage server client@Client{..} message =
 
 main :: IO ()
 main = withSocketsDo $ do 
+ args <- getArgs
+ let port = head args
  server <- newServer
  sock <- listenOn (PortNumber (fromIntegral port))
  printf "Listening on port %d\n" port
