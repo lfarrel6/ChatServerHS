@@ -17,176 +17,53 @@ import Network
 import Control.Monad
 import Text.Printf
 
--- __________________________________
--- Data Structures and initialisation
--- __________________________________
+-- ________________
+-- Data Structures 
+-- ________________
 
--- <<Server
-type Server = TVar (Map Int Chatroom)
-
-newServer :: IO Server
-newServer = newTVarIO Map.empty
--- >>
-
--- <<Chatroom
-data Chatroom = Chatroom
-  { roomName :: String
-  , roomRef  :: Int
-  , members  :: TVar (Map Int Client)
-  }
-
-newChatroom :: Client -> String -> STM Chatroom
-newChatroom joiner@Client{..} room = do
-  clientList <- newTVar $ Map.insert clientID joiner Map.empty
-  return Chatroom { roomName = room
-                  , roomRef  = hash room
-                  , members  = clientList
-                  }
-
-getChatroom :: Int -> Server -> STM (Maybe Chatroom)
-getChatroom roomRef serv = do
-  rooms <- readTVar serv
-  case Map.lookup roomRef rooms of
-   Nothing -> return Nothing
-   Just x  -> return $ Just x
-
-joinChatroom :: Client -> Server -> String -> IO ()
-joinChatroom joiner@Client{..} rooms name = atomically $ do
-  roomList <- readTVar rooms
-  case Map.lookup (hash name) roomList of
-  --if the room doesn't exist we want to create the room
-    Nothing -> do
-      room <- newChatroom joiner name
-
-      let updatedRoomList = Map.insert (roomRef room) room roomList
-      writeTVar rooms updatedRoomList
-      sendResponse (roomRef room) (roomName room)
-    Just aRoom -> do
-      clientList <- readTVar (members aRoom)
-      let newClientList = Map.insert clientID joiner clientList
-      writeTVar (members aRoom) newClientList
-      sendResponse (roomRef aRoom) (roomName aRoom)
-    where
-     sendResponse ref name = sendMessage joiner (Response $ "JOINED_CHATROOM:"++name++"\nSERVER_IP:0.0.0.0\nPORT:"++show (fromIntegral port) ++ "\nROOM_REF:" ++ show ref ++"\nJOIN_ID:" ++ show (ref+clientID))
-
-leaveChatroom :: Client -> Server -> Int -> IO ()
-leaveChatroom client@Client{..} server roomRef = leave' client server roomRef (roomRef+clientID)
-
-leave' :: Client -> Server -> Int -> Int -> IO ()
-leave' client@Client{..} server roomRef joinRef = do
-  roomList <- atomically $ readTVar server
-  case Map.lookup roomRef roomList of
-    Nothing    -> putStrLn "Room does not exist" 
-    Just aRoom -> do
-      atomically $ sendMessage client (Response $ "LEFT_CHATROOM:" ++ show roomRef ++ "\nJOIN_ID:" ++ show joinRef)
-      removeUser -- >> sendRoomMessage notification aRoom >> atomically (sendMessage client notification)
-      putStrLn ("removing " ++ clientName ++ "from room, messages sent")
-      putStrLn $ clientName++" left " ++ (roomName aRoom)
-      putStrLn $ "removal notif looks like: " ++ (show notification)
-      where
-       removeUser = atomically $ do
-         clientList <- readTVar (members aRoom)
-         let roomMembers = Map.elems clientList
-         mapM_ (\aClient -> sendMessage aClient notification) roomMembers
-         let newList = Map.delete (hash clientName) clientList
-         writeTVar (members aRoom) newList
-       notification = (Broadcast $ "CHAT:" ++ (show roomRef) ++ "\nCLIENT_NAME:" ++ clientName ++ "\nMESSAGE:" ++ clientName ++ " has left this chatroom.\n")
-
-deleteChatroom :: Server -> Int -> IO ()
-deleteChatroom serv ref = atomically $ do 
-  list <- readTVar serv
-  case Map.lookup ref list of
-    Nothing    -> return ()
-    Just aRoom -> do
-      let newList = Map.delete ref list
-      writeTVar serv newList
--- >>
-
--- <<Client
-data Client = Client
-   { clientName     :: String
-   , clientID       :: Int
-   , clientHandle   :: Handle
-   , clientSendChan :: TChan Message
-   }
-
-newClient :: String -> Int -> Handle -> IO Client
-newClient name id handle = do
-  c <- newTChanIO
-  return Client { clientName     = name
-                , clientID       = id
-                , clientHandle   = handle
-                , clientSendChan = c
-                }
--- >>
-
--- <<Message
-data Message = Notice String
-             | Response String
-             | Broadcast String
-             | Command [[String]] String
-             | Error String String
-             deriving Show
--- >>
-
--- <<SendMessage
-sendMessage :: Client -> Message -> STM ()
-sendMessage Client{..} = writeTChan clientSendChan
--- >>
-
--- <<SendRoomMessage
-sendRoomMessage :: Message -> Chatroom -> IO ()
-sendRoomMessage msg room@Chatroom{..} = do
-  atomically $ notifyRoom
-  putStrLn $ "sRM " ++ (show msg)
-  where
-   notifyRoom = do
-    memberList <- readTVar members
-    let roomMembers = Map.elems memberList
-    mapM_ (\aClient -> sendMessage aClient msg) roomMembers
--- >>
-
--- _____________________
--- Readability functions
--- _____________________
-
--- <<Port
-port :: Int
-port = 44444
--- >>
+import Chatroom
+import Client
+import Messaging
 
 -- <<Protocol Arguments
 
 --join
 joinArgs :: Int
 joinArgs = 4
+
 --leave
 leaveArgs :: Int
 leaveArgs = 3
+
 --disconnect
 disconnectArgs :: Int
 disconnectArgs = 3
+
 --send
 sendMsgArgs :: Int
 sendMsgArgs = 5
+
 --kill service
 killService :: String
 killService = "KILL"
 
 -- >>
 
--- <<talk - handler for new connections
+-- <<talk 
+
+-- handler for new connections
+
 talk :: Handle -> Server -> IO ()
 talk handle server = do
   hSetNewlineMode handle universalNewlineMode
   hSetBuffering handle NoBuffering
-  putStrLn ">Server Ready..."
+  debug ">Server Ready..."
   readOp
   return ()
   where
    readOp = do
      op <- hGetLine handle
-     putStrLn $ op ++ " received pre client creation"
+     debug $ op ++ " received pre client creation"
      case words op of
        ["HELO","BASE_TEST"] -> do
          echo $ "HELO text\nIP:134.226.44.141\nPort:" ++ (show port) ++ "\nStudentID:14317869\n"
@@ -200,8 +77,8 @@ talk handle server = do
 
              client <- newClient name (hash name) handle
              joinChatroom client server roomName
-             putStrLn $ "***Welcome, "++name++"***"
-             putStrLn $ name++" entered " ++ roomName ++ " //// " ++ show (hash roomName)
+             debug $ "***Welcome, "++name++"***"
+             debug $ name++" entered " ++ roomName ++ " //// " ++ show (hash roomName)
              let msgLines = "CHAT:"++(show $ (hash roomName))++"\nCLIENT_NAME:"++name++"\nMESSAGE:"++name ++ " has joined this chatroom.\n"
              notifyRoom (hash roomName) $ Broadcast msgLines
              runClient server client >> endClient client --(removeClient server client >> return ())
@@ -211,10 +88,10 @@ talk handle server = do
               roomsList <- atomically $ readTVar server
               let maybeRoom = Map.lookup roomRef roomsList
               case maybeRoom of
-               Nothing    -> putStrLn ("room does not exist " ++ (show roomRef)) >> return True
+               Nothing    -> debug ("room does not exist " ++ (show roomRef)) >> return True
                Just aRoom -> sendRoomMessage msg aRoom >> return True
             endClient client = do
-              putStrLn "Client deleted entirely"
+              debug "Client deleted entirely"
               return ()
               --removeClient server client
        _ -> output "Unreconized command" >> debug op >> readOp
@@ -222,7 +99,7 @@ talk handle server = do
         output = hPutStrLn handle 
         getArgs n = replicateM n $ hGetLine handle
         echo s = do
-                  putStrLn $ s ++ " being echoed"
+                  debug $ s ++ " being echoed"
                   output s
                   input <- hGetLine handle
                   echo input
@@ -230,17 +107,20 @@ talk handle server = do
 -- >>
 
 -- <<runClient
+
+-- Main server logic
+
 runClient :: Server -> Client -> IO ()
 runClient serv client@Client{..} = do
-  putStrLn "hello"
+  debug "hello"
   race server receive
-  putStrLn "race finished"
+  debug "race finished"
   return ()
   where
    receive = forever $ do
-     putStrLn "receiving"
+     debug "receiving"
      msg <- hGetLine clientHandle
-     putStrLn $ msg ++ " received"
+     debug $ msg ++ " received"
      case words msg of
        ["JOIN_CHATROOM:",roomName] -> do
          cmdLineArgs <- getArgs (joinArgs-1)
@@ -269,9 +149,13 @@ runClient serv client@Client{..} = do
      return $ do 
        continue <- handleMessage serv client msg
        when continue $ server
+
 -- >>
 
 -- <<handleMessage
+
+-- Intrepret incoming Messages
+
 handleMessage :: Server -> Client -> Message -> IO Bool
 handleMessage server client@Client{..} message =
   case message of
@@ -284,21 +168,21 @@ handleMessage server client@Client{..} message =
       --join chatroom
 
       [["CLIENT_IP:",_],["PORT:",_],["CLIENT_NAME:",name]] -> do
-        putStrLn ("joining joinRef = " ++ show (clientID + (hash mainArg)))
+        debug ("joining joinRef = " ++ show (clientID + (hash mainArg)))
         let msgLines = "CHAT:"++(show $ (hash mainArg))++"\nCLIENT_NAME:"++clientName++"\nMESSAGE:"++clientName ++ " has joined this chatroom.\n"
         joinChatroom client server mainArg >> notifyRoom (hash mainArg) (Broadcast msgLines)
 
       --leave chatroom
 
       [["JOIN_ID:",id],["CLIENT_NAME:",name]] -> do
-        putStrLn ("leave room joinref = " ++ id)
+        debug ("leave room joinref = " ++ id)
         leave' client server (read mainArg :: Int) (read id :: Int)
-        putStrLn "chatroom left success"
+        debug "chatroom left success"
         return True
 
       --disconnect
 
-      [["PORT:",_],["CLIENT_NAME:",name]] -> putStrLn "disconnecting user" >> removeClient server client >> return False
+      [["PORT:",_],["CLIENT_NAME:",name]] -> debug "disconnecting user" >> removeClient server client >> return False
 
       --send message
 
@@ -315,8 +199,8 @@ handleMessage server client@Client{..} message =
       
       _ -> do
         atomically   $ sendMessage client $ Error "Error 1" "Unrecognised Args"
-        mapM_ putStrLn $ map unwords msg
-        putStrLn "Error didnt recognise command"
+        mapM_ debug $ map unwords msg
+        debug "Error didnt recognise command"
         return True
       where
        reply replyMsg = atomically $ sendMessage client replyMsg
@@ -324,31 +208,17 @@ handleMessage server client@Client{..} message =
          roomsList <- atomically $ readTVar server
          let maybeRoom = Map.lookup roomRef roomsList
          case maybeRoom of
-           Nothing    -> putStrLn ("room does not exist " ++ (show roomRef)) >> return True
+           Nothing    -> debug ("room does not exist " ++ (show roomRef)) >> return True
            Just aRoom -> sendRoomMessage msg aRoom >> return True
   where
-   output s = do putStrLn (clientName ++ " receiving\\/\n" ++ s) >> hPutStrLn clientHandle s; return True
--- >>
+   output s = do debug (clientName ++ " receiving\\/\n" ++ s) >> hPutStrLn clientHandle s; return True
 
--- <<removeClient
--- want to remove client from entire server
-removeClient :: Server -> Client -> IO ()
-removeClient serv toRemove@Client{..} = do
-  rooms <- atomically $ readTVar serv
-  putStrLn "in remove client, server read"
-  let roomNames = Prelude.map (\room -> roomName room) (Map.elems rooms)
-  putStrLn "roomNames obtained"
-  putStrLn $ show roomNames
-  --let roomNames = List.sort roomNames
-  --putStrLn "sorted"
-  mapM_ (\room -> kickFrom room) roomNames
-  where
-   kickFrom room = do 
-     putStrLn ("removing " ++ clientName ++ " from " ++ room)
-     leaveChatroom toRemove serv (hash room) >> putStrLn (clientName ++ " removed from " ++ room)
 -- >>
 
 -- <<main
+
+-- Simple main to take connections and pass them to talk
+
 main :: IO ()
 main = withSocketsDo $ do 
  server <- newServer
@@ -358,9 +228,14 @@ main = withSocketsDo $ do
    (handle, host, port) <- accept sock
    printf "Accepted connection from %s: %s\n" host (show port)
    forkFinally (talk handle server) (\_ -> hClose handle)
+
 -- >>
 
 -- <<debug
+
+-- Simple debug function to print debug information, used to remove random putStrLns throughout code
+
 debug :: String -> IO ()
 debug = putStrLn
+
 -- >>
