@@ -187,7 +187,7 @@ handleMessage server port client@Client{..} message =
 
       --disconnect
 
-      [["PORT:",_],["CLIENT_NAME:",name]] -> debug "disconnecting user" >> removeClient server client >> return False
+      [["PORT:",_],["CLIENT_NAME:",name]] -> debug ("disconnecting user " ++ name) >> removeClient server client >> return True
 
       --send message
 
