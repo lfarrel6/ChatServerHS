@@ -98,13 +98,18 @@ removeClient serv toRemove@C.Client{..} = do
   let roomNames = Prelude.map (\room -> roomName room) (Map.elems rooms)
   debug "roomNames obtained"
   debug $ show roomNames
-  let roomNames = List.sort roomNames
+  --let roomNames = List.sort roomNames
   mapM_ (\room -> kickFrom room) roomNames
   where
    kickFrom room = do 
      debug ("removing " ++ clientName ++ " from " ++ room)
-
      disconnectClient toRemove serv (hash room)
+
+-- >>
+
+-- <<disconnectClient
+
+-- special case of leaving, requires different messages and checks membership before deleting
 
 disconnectClient :: C.Client -> Server -> Int -> IO ()
 disconnectClient c@C.Client{..} server roomRef = do
