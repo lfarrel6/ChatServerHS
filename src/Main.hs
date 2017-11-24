@@ -9,11 +9,11 @@ import GHC.Conc
 import Control.Concurrent.Async
 import qualified Data.Map as Map
 import Data.Map (Map)
-import qualified Data.List as List
 import Data.Hashable
 import System.IO
 import Control.Exception
 import Network
+import Network.Socket (close)
 import Control.Monad
 import Text.Printf
 import System.Environment
@@ -44,28 +44,45 @@ disconnectArgs = 3
 sendMsgArgs :: Int
 sendMsgArgs = 5
 
---kill service
-killService :: String
-killService = "KILL"
-
 -- >>
 
 -- <<ServSimple
 
 --simple helo/kill handler
 
-servSimple :: Handle -> PortNumber -> String -> IO ()
-servSimple hdl port msg = do
-  hPutStrLn hdl $ "HELO " ++ msg ++ "\n134.226.44.141\nPort:" ++ (show port) ++ "\nStudentID:14317869\n"
-  return ()
+simpleServer :: Handle -> Int -> IO ()
+simpleServer hdl port = do listen
+ where
+  listen = do 
+   msg <- hGetLine hdl
+   case words msg of
+    ["HELO",text] -> do
+      reply $ "HELO " ++ msg ++ "\n134.226.44.141\nPort:" ++ (show port) ++ "\nStudentID:14317869\n"
+      simpleServer hdl port
+    ["KILL_SERVICE"] -> putStrLn "rip server" >> return ()
+    _ -> putStrLn "Unknown command" >> simpleServer hdl port
+    where
+     reply = hPutStrLn hdl
 
 -- >>
+
+-- <<UserHandler
+
+userHandler :: Server -> Socket -> Int -> IO ()
+userHandler serv sock port = do
+  (handle, host, clientPort) <- accept sock
+  printf "Accepted connection from %s: %s\n" host (show clientPort)
+  forkFinally (talk handle serv port) (\_ -> hClose handle)
+  userHandler serv sock port
+
+-- >>
+
 
 -- <<talk 
 
 -- handler for new connections
 
-talk :: Handle -> Server -> PortNumber -> IO ()
+talk :: Handle -> Server -> Int -> IO ()
 talk handle server port = do
   hSetNewlineMode handle universalNewlineMode
   hSetBuffering handle NoBuffering
@@ -74,24 +91,19 @@ talk handle server port = do
   where
    readOp = do
      op <- hGetLine handle
-     debug $ op ++ " received pre client creation"
      case words op of
-       ["HELO",txt] -> do
-         servSimple handle port txt >> readOp
-       ["KILL_SERVICE"] -> debug "RIP" >> return ()
+       
        ["JOIN_CHATROOM:",roomName] -> do
          arguments <- getArgs (joinArgs-1)
-         --output roomName
+         
          case map words arguments of
            [["CLIENT_IP:",_],["PORT:",_],["CLIENT_NAME:",name]] -> do
-
              client <- newClient name (hash name) handle
              joinChatroom client server port roomName
-             debug $ "***Welcome, "++name++"***"
-             debug $ name++" entered " ++ roomName ++ " //// " ++ show (hash roomName)
              let msgLines = "CHAT:"++(show $ (hash roomName))++"\nCLIENT_NAME:"++name++"\nMESSAGE:"++name ++ " has joined this chatroom.\n"
              notifyRoom (hash roomName) $ Broadcast msgLines
-             runClient server port client >> endClient client --(removeClient server client >> return ())
+             runClient server port client >> return ()
+
            _ -> output "Unrecognized command" >> readOp
            where
             notifyRoom roomRef msg = do
@@ -100,28 +112,23 @@ talk handle server port = do
               case maybeRoom of
                Nothing    -> debug ("room does not exist " ++ (show roomRef)) >> return True
                Just aRoom -> sendRoomMessage msg aRoom >> return True
-            endClient client = do
-              debug "Client deleted entirely"
-              return ()
-              --removeClient server client
+              
        _ -> output "Unreconized command" >> debug op >> readOp
        where
         output = hPutStrLn handle 
         getArgs n = replicateM n $ hGetLine handle
 
+-- >>
+
 -- Main server logic
 
-runClient :: Server -> PortNumber -> Client -> IO ()
+runClient :: Server -> Int -> Client -> IO ()
 runClient serv port client@Client{..} = do
-  debug "hello"
   race server receive
-  debug "race finished"
   return ()
   where
    receive = forever $ do
-     debug "receiving"
      msg <- hGetLine clientHandle
-     debug $ msg ++ " received"
      case words msg of
        ["JOIN_CHATROOM:",roomName] -> do
          cmdLineArgs <- getArgs (joinArgs-1)
@@ -132,13 +139,10 @@ runClient serv port client@Client{..} = do
          send cmdLineArgs roomRef
        ["DISCONNECT:",ip]          -> do
          cmdLineArgs <- getArgs (disconnectArgs-1)
-         putStrLn "disconnect command"
          send cmdLineArgs ip
        ["CHAT:",roomRef]           -> do
          cmdLineArgs <- getArgs (sendMsgArgs-1)
          send cmdLineArgs roomRef
-       ["KILL_SERVICE"]            -> do
-         send [killService] killService
        _                           -> debug msg >> throwError
        where
         send :: [String] -> String -> IO ()
@@ -157,7 +161,7 @@ runClient serv port client@Client{..} = do
 
 -- Intrepret incoming Messages
 
-handleMessage :: Server -> PortNumber -> Client -> Message -> IO Bool
+handleMessage :: Server -> Int -> Client -> Message -> IO Bool
 handleMessage server port client@Client{..} message =
   case message of
     Notice    msg       -> output $ msg
@@ -169,16 +173,13 @@ handleMessage server port client@Client{..} message =
       --join chatroom
 
       [["CLIENT_IP:",_],["PORT:",_],["CLIENT_NAME:",name]] -> do
-        debug ("joining joinRef = " ++ show (clientID + (hash mainArg)))
         let msgLines = "CHAT:"++(show $ (hash mainArg))++"\nCLIENT_NAME:"++clientName++"\nMESSAGE:"++clientName ++ " has joined this chatroom.\n"
         joinChatroom client server port mainArg >> notifyRoom (hash mainArg) (Broadcast msgLines)
 
       --leave chatroom
 
       [["JOIN_ID:",id],["CLIENT_NAME:",name]] -> do
-        debug ("leave room joinref = " ++ id)
         leave' client server (read mainArg :: Int) (read id :: Int)
-        debug "chatroom left success"
         return True
 
       --disconnect
@@ -189,19 +190,12 @@ handleMessage server port client@Client{..} message =
 
       [["JOIN_ID:",id],["CLIENT_NAME:",name],("MESSAGE:":msgToSend),[]] -> do
         notifyRoom (read mainArg :: Int) $ Broadcast ("CHAT: " ++ mainArg ++ "\nCLIENT_NAME: " ++ name ++ "\nMESSAGE: "++(unwords msgToSend)++"\n")
-
-      --kill service
-
-      [["KILL"]]                         -> do
-        if mainArg == killService then return False
-        else return True
       
       --wildcard
       
       _ -> do
         atomically   $ sendMessage client $ Error "Error 1" "Unrecognised Args"
         mapM_ debug $ map unwords msg
-        debug "Error didnt recognise command"
         return True
       where
        reply replyMsg = atomically $ sendMessage client replyMsg
@@ -227,10 +221,11 @@ main = withSocketsDo $ do
  server <- newServer
  sock <- listenOn $ portNum port
  printf "Listening on port %d\n" port
- forever $ do
-   (handle, host, port) <- accept sock
-   printf "Accepted connection from %s: %s\n" host (show port)
-   forkFinally (talk handle server port) (\_ -> hClose handle)
+ (handle, host, clientPort) <- accept sock
+ printf "Accepted connection from %s: %s\n" host (show clientPort)
+ forkFinally (simpleServer handle port) (\_ -> close sock >> return ())
+ userHandler server sock port
+ return ()
  where
   portNum n = PortNumber $ fromIntegral n
 

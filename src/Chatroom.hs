@@ -11,6 +11,7 @@ import Data.Map (Map)
 import Control.Concurrent.STM
 import Data.Hashable
 import Network
+import qualified Data.List as List
 
 -- <<Server
 
@@ -66,17 +67,17 @@ getChatroom roomRef serv = do
 
 -- Insert new client into the chatroom, if the chatroom doesnt exist, create a new one and insert user into that
 
-joinChatroom :: C.Client -> Server -> PortNumber -> String -> IO ()
+joinChatroom :: C.Client -> Server -> Int -> String -> IO ()
 joinChatroom joiner@C.Client{..} rooms port name = atomically $ do
   roomList <- readTVar rooms
   case Map.lookup (hash name) roomList of
   --if the room doesn't exist we want to create the room
-    Nothing -> do
+    Nothing    -> do
       room <- newChatroom joiner name
-
       let updatedRoomList = Map.insert (roomRef room) room roomList
       writeTVar rooms updatedRoomList
       sendResponse (roomRef room) (roomName room)
+
     Just aRoom -> do
       clientList <- readTVar (members aRoom)
       let newClientList = Map.insert clientID joiner clientList
@@ -94,11 +95,10 @@ joinChatroom joiner@C.Client{..} rooms port name = atomically $ do
 removeClient :: Server -> C.Client -> IO ()
 removeClient serv toRemove@C.Client{..} = do
   rooms <- atomically $ readTVar serv
-  debug "in remove client, server read"
   let roomNames = Prelude.map (\room -> roomName room) (Map.elems rooms)
   debug "roomNames obtained"
   debug $ show roomNames
-  --let roomNames = List.sort roomNames
+  let roomNames = List.sort roomNames
   mapM_ (\room -> kickFrom room) roomNames
   where
    kickFrom room = do 
@@ -124,13 +124,10 @@ leave' :: C.Client -> Server -> Int -> Int -> IO ()
 leave' client@C.Client{..} server roomRef joinRef = do
   roomList <- atomically $ readTVar server
   case Map.lookup roomRef roomList of
-    Nothing    -> debug "Room does not exist" 
+    Nothing    -> debug "Room does not exist"
     Just aRoom -> do
       atomically $ C.sendMessage client (Response $ "LEFT_CHATROOM:" ++ show roomRef ++ "\nJOIN_ID:" ++ show joinRef)
-      removeUser -- >> sendRoomMessage notification aRoom >> atomically (sendMessage client notification)
-      debug ("removing " ++ clientName ++ "from room, messages sent")
-      debug $ clientName++" left " ++ (roomName aRoom)
-      debug $ "removal notif looks like: " ++ (show notification)
+      removeUser
       where
        removeUser = atomically $ do
          clientList <- readTVar (members aRoom)
@@ -164,7 +161,6 @@ deleteChatroom serv ref = atomically $ do
 sendRoomMessage :: Message -> Chatroom -> IO ()
 sendRoomMessage msg room@Chatroom{..} = do
   atomically $ notifyRoom
-  debug $ "sRM " ++ (show msg)
   where
    notifyRoom = do
     memberList <- readTVar members
