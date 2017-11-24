@@ -1,10 +1,10 @@
 
 ==================== FINAL INTERFACE ====================
-2017-11-24 21:16:10.5692355 UTC
+2017-11-24 21:32:06.0532901 UTC
 
 interface main@main:Chatroom 8002
-  interface hash: 0a41bf7b1b85e82dcd26d6d6337e2faf
-  ABI hash: cc1ff926f6cb39171238ee756ded3745
+  interface hash: 6447d526fd16ac053c69788eec18a692
+  ABI hash: f4d8dd7b1e038ea2b556a7077ee9facf
   export-list hash: 6aaa4538ff300383a5fbb594b895518b
   orphan hash: 693e9af84d3dfcc71e640e005bdc5e2e
   flag hash: a330f96cda9be82db80ff988c3410755
@@ -593,22 +593,22 @@ b24850b5b80f4a1db37564c8597735eb
                     GHC.Conc.Sync.TVar
                       @ (Data.Map.Base.Map GHC.Types.Int Chatroom.Chatroom)
                       ipv1 #) }) -}
-f9142e0222346e6046727d5c61db2d59
+4ab0f725cc5d8c4dbb7214eaa1b88037
   removeClient :: Chatroom.Server -> Client.Client -> GHC.Types.IO ()
-  {- Arity: 3, Strictness: <S(S),U(U)><S,1*U(U,U(U),A,A)><S,U>,
+  {- Arity: 3, Strictness: <S(S),1*U(U)><S,1*U(U,U(U),A,A)><S,U>,
      Unfolding: InlineRule (0, True, True)
                 Chatroom.removeClient1
                   `cast`
                 (<Chatroom.Server>_R
                  ->_R <Client.Client>_R
                  ->_R Sym (GHC.Types.N:IO[0] <()>_R)) -}
-fda9942d8a50263b59d14eb1240890ad
+f2f297c30a664d1a1b33f0ce1ad72dc6
   removeClient1 ::
     Chatroom.Server
     -> Client.Client
     -> GHC.Prim.State# GHC.Prim.RealWorld
     -> (# GHC.Prim.State# GHC.Prim.RealWorld, () #)
-  {- Arity: 3, Strictness: <S(S),U(U)><S,1*U(U,U(U),A,A)><S,U>,
+  {- Arity: 3, Strictness: <S(S),1*U(U)><S,1*U(U,U(U),A,A)><S,U>,
      Inline: INLINE[0],
      Unfolding: InlineRule (3, True, False)
                 (\ (w :: Chatroom.Server)

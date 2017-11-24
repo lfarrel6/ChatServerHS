@@ -1,9 +1,9 @@
 
 ==================== FINAL INTERFACE ====================
-2017-11-24 20:46:03.6702097 UTC
+2017-11-24 21:32:06.5942816 UTC
 
 interface main@main:Main 8002
-  interface hash: 40d0c1db35b19156547ec49a9361c694
+  interface hash: f5957304ec717cdf03c4e01f2af40b7d
   ABI hash: dc6b2ae7fe8df6e83aaafcc1575604e6
   export-list hash: a69bb2873cd306fdb708204d20387c7d
   orphan hash: e3f907cc77bbc0eb7e4f425dad3f8e77
@@ -87,13 +87,13 @@ import  -/  containers-0.5.7.1@containers-0.5.7.1:Data.Map.Base dfcca0a6b3fe9560
 import  -/  ghc-prim-0.5.0.0:GHC.Types 89f8de4f08018c9177c98d979eae0e45
 import  -/  hashable-1.2.6.1@hashable-1.2.6.1-2ZLNuHq395GGIHwEHuqZol:Data.Hashable bcc0805ccd30e6faaa2d13862a166356
 import  -/  hashable-1.2.6.1@hashable-1.2.6.1-2ZLNuHq395GGIHwEHuqZol:Data.Hashable.Class e8d09170813d4540def5c8ad0cd3d04c
-import  -/  Chatroom cc1ff926f6cb39171238ee756ded3745
+import  -/  Chatroom f4d8dd7b1e038ea2b556a7077ee9facf
   exports: 6aaa4538ff300383a5fbb594b895518b
   Server 6a453757b7b733c1e0028a6036f9a2df
   joinChatroom eb512a6d534b1620845b5114901f7722
   leave' 84312cd9619ff466cb1f4feb6f281624
   newServer 09d1dfbb91675ebd343178135ad6eb61
-  removeClient f9142e0222346e6046727d5c61db2d59
+  removeClient 4ab0f725cc5d8c4dbb7214eaa1b88037
   sendRoomMessage 40c4fbc2268d74c17e7530b50a3f30a0
 import  -/  Client 60e3f84f754da476ce184521bd7aa129
   exports: 666d36a982cc188841e651659b23e68c

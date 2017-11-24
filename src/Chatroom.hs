@@ -93,17 +93,13 @@ joinChatroom joiner@C.Client{..} rooms port name = atomically $ do
 -- Remove client from entire server
 
 removeClient :: Server -> C.Client -> IO ()
-removeClient serv toRemove@C.Client{..} = do
-  rooms <- atomically $ readTVar serv
+removeClient serv toRemove@C.Client{..} = atomically $ do
+  rooms <- readTVar serv
   let roomNames = reverse $ Prelude.map (\room -> roomName room) (Map.elems rooms)
-  debug "roomNames obtained"
-
-  debug $ show roomNames
   mapM_ (\room -> kickFrom room) roomNames
-  debug "user dced"
   where
    kickFrom room = do 
-     debug ("removing " ++ clientName ++ " from " ++ room)
+     --debug ("removing " ++ clientName ++ " from " ++ room)
      disconnectClient toRemove serv (hash room)
 
 -- >>
@@ -112,12 +108,12 @@ removeClient serv toRemove@C.Client{..} = do
 
 -- special case of leaving, requires different messages and checks membership before deleting
 
-disconnectClient :: C.Client -> Server -> Int -> IO ()
+disconnectClient :: C.Client -> Server -> Int -> STM ()
 disconnectClient c@C.Client{..} server roomRef = do
-   rooms <- atomically $ readTVar server
+   rooms <- readTVar server
    case Map.lookup roomRef rooms of
     Nothing    -> return ()
-    Just aRoom -> atomically $ do
+    Just aRoom -> do
      memberListing <- readTVar $ members aRoom
      case Map.lookup clientID memberListing of
       Nothing   -> return ()
