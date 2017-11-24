@@ -95,8 +95,9 @@ joinChatroom joiner@C.Client{..} rooms port name = atomically $ do
 removeClient :: Server -> C.Client -> IO ()
 removeClient serv toRemove@C.Client{..} = do
   rooms <- atomically $ readTVar serv
-  let roomNames = Prelude.map (\room -> roomName room) (Map.elems rooms)
+  let roomNames = reverse $ Prelude.map (\room -> roomName room) (Map.elems rooms)
   debug "roomNames obtained"
+
   debug $ show roomNames
   mapM_ (\room -> kickFrom room) roomNames
   debug "user dced"

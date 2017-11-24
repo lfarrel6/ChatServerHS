@@ -1,10 +1,10 @@
 
 ==================== FINAL INTERFACE ====================
-2017-11-24 20:02:43.4204389 UTC
+2017-11-24 20:46:03.6702097 UTC
 
 interface main@main:Main 8002
-  interface hash: 0a43ba3a1fc1d42e589479502dc32bba
-  ABI hash: dd54c2e1492482fc74d34b9586b2d027
+  interface hash: 40d0c1db35b19156547ec49a9361c694
+  ABI hash: dc6b2ae7fe8df6e83aaafcc1575604e6
   export-list hash: a69bb2873cd306fdb708204d20387c7d
   orphan hash: e3f907cc77bbc0eb7e4f425dad3f8e77
   flag hash: 13e50a4aa15c4465e5efb1e7c62b5371
@@ -87,14 +87,14 @@ import  -/  containers-0.5.7.1@containers-0.5.7.1:Data.Map.Base dfcca0a6b3fe9560
 import  -/  ghc-prim-0.5.0.0:GHC.Types 89f8de4f08018c9177c98d979eae0e45
 import  -/  hashable-1.2.6.1@hashable-1.2.6.1-2ZLNuHq395GGIHwEHuqZol:Data.Hashable bcc0805ccd30e6faaa2d13862a166356
 import  -/  hashable-1.2.6.1@hashable-1.2.6.1-2ZLNuHq395GGIHwEHuqZol:Data.Hashable.Class e8d09170813d4540def5c8ad0cd3d04c
-import  -/  Chatroom ab125a33fbc121d1988181ecedcbaf4a
+import  -/  Chatroom cc1ff926f6cb39171238ee756ded3745
   exports: 6aaa4538ff300383a5fbb594b895518b
   Server 6a453757b7b733c1e0028a6036f9a2df
   joinChatroom eb512a6d534b1620845b5114901f7722
   leave' 84312cd9619ff466cb1f4feb6f281624
   newServer 09d1dfbb91675ebd343178135ad6eb61
-  removeClient 4a35ce98b5e0a85f1a5b84b849895bb5
-  sendRoomMessage 35ee6bf845ff833534b1505fd2a14056
+  removeClient f9142e0222346e6046727d5c61db2d59
+  sendRoomMessage 40c4fbc2268d74c17e7530b50a3f30a0
 import  -/  Client 60e3f84f754da476ce184521bd7aa129
   exports: 666d36a982cc188841e651659b23e68c
   Client 4339dc20b0bed9081f0a0cd503e645e8
@@ -148,7 +148,7 @@ d6831ef04cb9301b090dfae6f7bb7ec7
   $trModule2 :: GHC.Types.TrName
   {- HasNoCafRefs, Strictness: m1,
      Unfolding: (GHC.Types.TrNameS "main"#) -}
-7eeff99011f02d7740cb12e4511fc127
+f0ddae86e3952a7931ef1ceaa15e9e08
   $whandleMessage ::
     Chatroom.Server
     -> GHC.Types.Int
@@ -160,7 +160,7 @@ d6831ef04cb9301b090dfae6f7bb7ec7
     -> GHC.Prim.State# GHC.Prim.RealWorld
     -> (# GHC.Prim.State# GHC.Prim.RealWorld, GHC.Types.Bool #)
   {- Arity: 8,
-     Strictness: <L,U(U)><L,1*U(U)><L,U><L,U(U)><L,U><L,U(U,U)><S,1*U><S,U>,
+     Strictness: <L,U(U)><L,1*U(U)><L,U><L,U(U)><L,U><L,1*U(U,U)><S,1*U><S,U>,
      Inline: [0] -}
 2a76c205e5dc300d5888b8986b018e36
   $wpoly_go10 ::
@@ -205,7 +205,7 @@ c0199ecc2f45349b866360d0c7830fda
 bdccac902d74fe37a1d1b76005c24249
   disconnectArgs :: GHC.Types.Int
   {- HasNoCafRefs, Strictness: m, Unfolding: (GHC.Types.I# 3#) -}
-31c15f86cd3106d97e7352e48b62db0f
+065fffc332684d2d2571a8dc8cad0bb8
   handleMessage ::
     Chatroom.Server
     -> GHC.Types.Int
@@ -213,7 +213,7 @@ bdccac902d74fe37a1d1b76005c24249
     -> Messaging.Message
     -> GHC.Types.IO GHC.Types.Bool
   {- Arity: 5,
-     Strictness: <L,U(U)><L,1*U(U)><S,1*U(U,U(U),U,U(U,U))><S,1*U><S,U>,
+     Strictness: <L,U(U)><L,1*U(U)><S,1*U(U,U(U),U,1*U(U,U))><S,1*U><S,U>,
      Unfolding: InlineRule (0, True, True)
                 Main.handleMessage1
                   `cast`
@@ -222,7 +222,7 @@ bdccac902d74fe37a1d1b76005c24249
                  ->_R <Client.Client>_R
                  ->_R <Messaging.Message>_R
                  ->_R Sym (GHC.Types.N:IO[0] <GHC.Types.Bool>_R)) -}
-2796df348fd2432e231a9a6041309767
+b7b269b3ab4d73d39e0d12398c43e3bd
   handleMessage1 ::
     Chatroom.Server
     -> GHC.Types.Int
@@ -231,7 +231,7 @@ bdccac902d74fe37a1d1b76005c24249
     -> GHC.Prim.State# GHC.Prim.RealWorld
     -> (# GHC.Prim.State# GHC.Prim.RealWorld, GHC.Types.Bool #)
   {- Arity: 5,
-     Strictness: <L,U(U)><L,1*U(U)><S,1*U(U,U(U),U,U(U,U))><S,1*U><S,U>,
+     Strictness: <L,U(U)><L,1*U(U)><S,1*U(U,U(U),U,1*U(U,U))><S,1*U><S,U>,
      Inline: INLINE[0],
      Unfolding: InlineRule (5, True, False)
                 (\ (w :: Chatroom.Server)

@@ -223,7 +223,7 @@ main = withSocketsDo $ do
  printf "Listening on port %d\n" port
  (handle, host, clientPort) <- accept sock
  printf "Accepted connection from %s: %s\n" host (show clientPort)
- forkFinally (simpleServer handle port) (\_ -> close sock >> return ())
+ forkFinally (simpleServer handle port) (\_ -> sClose sock >> return ())
  userHandler server sock port
  return ()
  where
