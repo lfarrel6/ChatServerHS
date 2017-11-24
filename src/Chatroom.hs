@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Chatroom (Server, Chatroom, removeClient, newServer,
-                port, newChatroom, getChatroom, joinChatroom,
+                newChatroom, getChatroom, joinChatroom,
                 leaveChatroom, leave', deleteChatroom, sendRoomMessage) where
 
 import Messaging
@@ -10,6 +10,7 @@ import qualified Data.Map as Map
 import Data.Map (Map)
 import Control.Concurrent.STM
 import Data.Hashable
+import Network
 
 -- <<Server
 
@@ -19,15 +20,6 @@ type Server = TVar (Map Int Chatroom)
 
 newServer :: IO Server
 newServer = newTVarIO Map.empty
-
--- >>
-
--- <<Port
-
--- Constructor for port constant
-
-port :: Int
-port = 44444
 
 -- >>
 
@@ -74,8 +66,8 @@ getChatroom roomRef serv = do
 
 -- Insert new client into the chatroom, if the chatroom doesnt exist, create a new one and insert user into that
 
-joinChatroom :: C.Client -> Server -> String -> IO ()
-joinChatroom joiner@C.Client{..} rooms name = atomically $ do
+joinChatroom :: C.Client -> Server -> PortNumber -> String -> IO ()
+joinChatroom joiner@C.Client{..} rooms port name = atomically $ do
   roomList <- readTVar rooms
   case Map.lookup (hash name) roomList of
   --if the room doesn't exist we want to create the room

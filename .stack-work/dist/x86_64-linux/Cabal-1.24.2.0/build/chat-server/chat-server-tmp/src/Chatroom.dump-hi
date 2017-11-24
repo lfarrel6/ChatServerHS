@@ -1,11 +1,11 @@
 
 ==================== FINAL INTERFACE ====================
-2017-11-23 12:40:27.591403 UTC
+2017-11-24 13:35:47.806239 UTC
 
 interface main@main:Chatroom 8002
-  interface hash: 63ea3d35a7b8d5d08e124e9751161308
-  ABI hash: d9af2fc76b715d7bdd3e9ba66c84ae4d
-  export-list hash: 8ef8aec972f121de0bc33a819ea06e45
+  interface hash: c52d88945b4a01f7b830b01a5ff4b53a
+  ABI hash: 68e75588180482bea56601cb20205ba7
+  export-list hash: 7798fb7334bf00194aff489de797b56b
   orphan hash: 693e9af84d3dfcc71e640e005bdc5e2e
   flag hash: 3c194b230b637ebe1fae50c4a42960fa
   sig of: Nothing
@@ -19,7 +19,6 @@ exports:
   Chatroom.leaveChatroom
   Chatroom.newChatroom
   Chatroom.newServer
-  Chatroom.port
   Chatroom.removeClient
   Chatroom.sendRoomMessage
   Chatroom.Chatroom
@@ -88,6 +87,8 @@ import  -/  Messaging f04aeb114106397bdf92099aab4b0374
   Broadcast d49dc5529dfebeafedeb2cdc0db92a57
   Message 81b96bb465c9c68b18b5cb655a4a7e4f
   Response 966a7a8daeb515f976ee748ba1b54b09
+import  -/  network-2.6.3.2@network-2.6.3.2-IsLM4TXcLoRI0fmmBYVyQz:Network c12ec0ca3509ab395a99ca2a2d280dc1
+import  -/  network-2.6.3.2@network-2.6.3.2-IsLM4TXcLoRI0fmmBYVyQz:Network.Socket.Types e0e029ac5eaa30b6170e0170a0fb3341
 import  -/  stm-2.4.4.1@stm-2.4.4.1-JQn4hNPyYjP5m9AcbI88Ve:Control.Concurrent.STM 3662559905a40ae5adbc3e935ac706c8
 66775bb9d89a2473f4efcde75a50fea3
   $slookup1 ::
@@ -181,7 +182,7 @@ d32f55a9033e1286d0fdc7af5fd94335
                                 ipv of s2# { DEFAULT ->
                          (# s2#, GHC.Tuple.() #) } } })
                    w) -}
-fe8d6fbbf0591de4324ab6994610ea64
+0bba9c0ff9d79673710015165b44220d
   $wjoinChatroom ::
     GHC.Base.String
     -> GHC.Types.Int
@@ -195,11 +196,12 @@ fe8d6fbbf0591de4324ab6994610ea64
     -> GHC.Prim.TVar#
          GHC.Prim.RealWorld
          (Data.Map.Base.Map GHC.Types.Int Chatroom.Chatroom)
+    -> Network.Socket.Types.PortNumber
     -> GHC.Base.String
     -> GHC.Prim.State# GHC.Prim.RealWorld
     -> (# GHC.Prim.State# GHC.Prim.RealWorld, () #)
-  {- Arity: 8,
-     Strictness: <L,U><L,U(U)><L,U><L,U><S,U><S,U><S,U><S,U>,
+  {- Arity: 9,
+     Strictness: <L,U><L,U(U)><L,U><L,U><S,U><S,U><L,1*U(U)><S,U><S,U>,
      Inline: [0] -}
 caacc77c514d2390bc6d6ef425d1e67f
   $wleave' ::
@@ -429,38 +431,44 @@ e215e1e2d66da278c6877491b3a0edf5
                    GHC.Base.Nothing -> (# ipv, GHC.Base.Nothing @ Chatroom.Chatroom #)
                    GHC.Base.Just x
                    -> (# ipv, GHC.Base.Just @ Chatroom.Chatroom x #) } } }) -}
-fd7fad5c9a4de761b8604001c627d4fb
+2dbf0e75c823d031be97e210a3312b84
   joinChatroom ::
     Client.Client
-    -> Chatroom.Server -> GHC.Base.String -> GHC.Types.IO ()
-  {- Arity: 4,
-     Strictness: <S(LLLS(LS)),1*U(U,U(U),U,U(U,U))><S(S),1*U(U)><S,U><S,U>,
+    -> Chatroom.Server
+    -> Network.Socket.Types.PortNumber
+    -> GHC.Base.String
+    -> GHC.Types.IO ()
+  {- Arity: 5,
+     Strictness: <S(LLLS(LS)),1*U(U,U(U),U,U(U,U))><S(S),1*U(U)><L,1*U(U)><S,U><S,U>,
      Unfolding: InlineRule (0, True, True)
                 Chatroom.joinChatroom1
                   `cast`
                 (<Client.Client>_R
                  ->_R <Chatroom.Server>_R
+                 ->_R <Network.Socket.Types.PortNumber>_R
                  ->_R <GHC.Base.String>_R
                  ->_R Sym (GHC.Types.N:IO[0] <()>_R)) -}
-858541e1419346f11146dadb8e9f30b4
+56599ef7f1e32a68d52fee8ce2315d4a
   joinChatroom1 ::
     Client.Client
     -> Chatroom.Server
+    -> Network.Socket.Types.PortNumber
     -> GHC.Base.String
     -> GHC.Prim.State# GHC.Prim.RealWorld
     -> (# GHC.Prim.State# GHC.Prim.RealWorld, () #)
-  {- Arity: 4,
-     Strictness: <S(LLLS(LS)),1*U(U,U(U),U,U(U,U))><S(S),1*U(U)><S,U><S,U>,
+  {- Arity: 5,
+     Strictness: <S(LLLS(LS)),1*U(U,U(U),U,U(U,U))><S(S),1*U(U)><L,1*U(U)><S,U><S,U>,
      Inline: INLINE[0],
-     Unfolding: InlineRule (4, True, False)
+     Unfolding: InlineRule (5, True, False)
                 (\ (w :: Client.Client)
                    (w1 :: Chatroom.Server)
-                   (w2 :: GHC.Base.String)
-                   (w3 :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
+                   (w2 :: Network.Socket.Types.PortNumber)
+                   (w3 :: GHC.Base.String)
+                   (w4 :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
                  case w of ww { Client.Client ww1 ww2 ww3 ww4 ->
                  case ww4 of ww5 { Control.Concurrent.STM.TChan.TChan ww6 ww7 ->
                  case w1 of ww8 { GHC.Conc.Sync.TVar ww9 ->
-                 Chatroom.$wjoinChatroom ww1 ww2 ww3 ww6 ww7 ww9 w2 w3 } } }) -}
+                 Chatroom.$wjoinChatroom ww1 ww2 ww3 ww6 ww7 ww9 w2 w3 w4 } } }) -}
 a80eb5b5cdb433549c7c8c51a9129099
   leave' ::
     Client.Client
@@ -595,9 +603,6 @@ e867c7cda99c6936d54b0084c03a08e7
                     GHC.Conc.Sync.TVar
                       @ (Data.Map.Base.Map GHC.Types.Int Chatroom.Chatroom)
                       ipv1 #) }) -}
-926a4be798bc11b66c97773358b492f2
-  port :: GHC.Types.Int
-  {- HasNoCafRefs, Strictness: m, Unfolding: (GHC.Types.I# 44444#) -}
 3204ff3392ea97d96441530a70e26349
   removeClient :: Chatroom.Server -> Client.Client -> GHC.Types.IO ()
   {- Arity: 3, Strictness: <S(S),U(U)><S,1*U(U,U(U),A,U(A,U))><S,U>,

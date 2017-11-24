@@ -22,7 +22,7 @@ import System.Environment
 -- Data Structures 
 -- ________________
 
-import Chatroom (hiding port)
+import Chatroom
 import Client
 import Messaging
 
@@ -50,26 +50,36 @@ killService = "KILL"
 
 -- >>
 
+-- <<ServSimple
+
+--simple helo/kill handler
+
+servSimple :: Handle -> PortNumber -> String -> IO ()
+servSimple hdl port msg = do
+  hPutStrLn hdl $ "HELO " ++ msg ++ "\n134.226.44.141\nPort:" ++ (show port) ++ "\nStudentID:14317869\n"
+  return ()
+
+-- >>
+
+
 -- <<talk 
 
 -- handler for new connections
 
-talk :: Handle -> Server -> IO ()
-talk handle server = do
+talk :: Handle -> Server -> PortNumber -> IO ()
+talk handle server port = do
   hSetNewlineMode handle universalNewlineMode
   hSetBuffering handle NoBuffering
   debug ">Server Ready..."
   readOp
-  return ()
   where
    readOp = do
      op <- hGetLine handle
      debug $ op ++ " received pre client creation"
      case words op of
-       ["HELO","BASE_TEST"] -> do
-         echo $ "HELO text\nIP:134.226.44.141\nPort:" ++ (show port) ++ "\nStudentID:14317869\n"
-         readOp
-       ["KILL_SERVICE"] -> output "RIP" >> return ()
+       ["HELO",txt] -> do
+         servSimple handle port txt >> readOp
+       ["KILL_SERVICE"] -> debug "RIP" >> return ()
        ["JOIN_CHATROOM:",roomName] -> do
          arguments <- getArgs (joinArgs-1)
          --output roomName
@@ -77,12 +87,12 @@ talk handle server = do
            [["CLIENT_IP:",_],["PORT:",_],["CLIENT_NAME:",name]] -> do
 
              client <- newClient name (hash name) handle
-             joinChatroom client server roomName
+             joinChatroom client server port roomName
              debug $ "***Welcome, "++name++"***"
              debug $ name++" entered " ++ roomName ++ " //// " ++ show (hash roomName)
              let msgLines = "CHAT:"++(show $ (hash roomName))++"\nCLIENT_NAME:"++name++"\nMESSAGE:"++name ++ " has joined this chatroom.\n"
              notifyRoom (hash roomName) $ Broadcast msgLines
-             runClient server client >> endClient client --(removeClient server client >> return ())
+             runClient server port client >> endClient client --(removeClient server client >> return ())
            _ -> output "Unrecognized command" >> readOp
            where
             notifyRoom roomRef msg = do
@@ -99,20 +109,11 @@ talk handle server = do
        where
         output = hPutStrLn handle 
         getArgs n = replicateM n $ hGetLine handle
-        echo s = do
-                  debug $ s ++ " being echoed"
-                  output s
-                  input <- hGetLine handle
-                  echo input
-
--- >>
-
--- <<runClient
 
 -- Main server logic
 
-runClient :: Server -> Client -> IO ()
-runClient serv client@Client{..} = do
+runClient :: Server -> PortNumber -> Client -> IO ()
+runClient serv port client@Client{..} = do
   debug "hello"
   race server receive
   debug "race finished"
@@ -148,7 +149,7 @@ runClient serv client@Client{..} = do
    server = join $ atomically $ do
      msg <- readTChan clientSendChan
      return $ do 
-       continue <- handleMessage serv client msg
+       continue <- handleMessage serv port client msg
        when continue $ server
 
 -- >>
@@ -157,8 +158,8 @@ runClient serv client@Client{..} = do
 
 -- Intrepret incoming Messages
 
-handleMessage :: Server -> Client -> Message -> IO Bool
-handleMessage server client@Client{..} message =
+handleMessage :: Server -> PortNumber -> Client -> Message -> IO Bool
+handleMessage server port client@Client{..} message =
   case message of
     Notice    msg       -> output $ msg
     Response  msg       -> output $ msg
@@ -171,7 +172,7 @@ handleMessage server client@Client{..} message =
       [["CLIENT_IP:",_],["PORT:",_],["CLIENT_NAME:",name]] -> do
         debug ("joining joinRef = " ++ show (clientID + (hash mainArg)))
         let msgLines = "CHAT:"++(show $ (hash mainArg))++"\nCLIENT_NAME:"++clientName++"\nMESSAGE:"++clientName ++ " has joined this chatroom.\n"
-        joinChatroom client server mainArg >> notifyRoom (hash mainArg) (Broadcast msgLines)
+        joinChatroom client server port mainArg >> notifyRoom (hash mainArg) (Broadcast msgLines)
 
       --leave chatroom
 
@@ -223,14 +224,16 @@ handleMessage server client@Client{..} message =
 main :: IO ()
 main = withSocketsDo $ do 
  args <- getArgs
- let port = head args
+ let port = read (head args) :: Int
  server <- newServer
- sock <- listenOn (PortNumber (fromIntegral port))
+ sock <- listenOn $ portNum port
  printf "Listening on port %d\n" port
  forever $ do
    (handle, host, port) <- accept sock
    printf "Accepted connection from %s: %s\n" host (show port)
-   forkFinally (talk handle server) (\_ -> hClose handle)
+   forkFinally (talk handle server port) (\_ -> hClose handle)
+ where
+  portNum n = PortNumber $ fromIntegral n
 
 -- >>
 
