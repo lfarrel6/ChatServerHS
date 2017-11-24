@@ -98,8 +98,8 @@ removeClient serv toRemove@C.Client{..} = do
   let roomNames = Prelude.map (\room -> roomName room) (Map.elems rooms)
   debug "roomNames obtained"
   debug $ show roomNames
-  --let roomNames = List.sort roomNames
   mapM_ (\room -> kickFrom room) roomNames
+  debug "user dced"
   where
    kickFrom room = do 
      debug ("removing " ++ clientName ++ " from " ++ room)
