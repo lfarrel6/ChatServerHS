@@ -103,7 +103,26 @@ removeClient serv toRemove@C.Client{..} = do
   where
    kickFrom room = do 
      debug ("removing " ++ clientName ++ " from " ++ room)
-     leaveChatroom toRemove serv (hash room) >> debug (clientName ++ " removed from " ++ room)
+
+     disconnectClient toRemove serv (hash room)
+
+disconnectClient :: C.Client -> Server -> Int -> IO ()
+disconnectClient c@C.Client{..} server roomRef = do
+   rooms <- atomically $ readTVar server
+   case Map.lookup roomRef rooms of
+    Nothing    -> return ()
+    Just aRoom -> do
+     memberListing <- atomically $ readTVar $ members aRoom
+     case Map.lookup clientID memberListing of
+      Nothing   -> return ()
+      Just user -> atomically $ do
+       notify $ Map.elems memberListing
+       let newList = Map.delete clientID memberListing
+       writeTVar (members aRoom) newList
+     where
+      notify l     = mapM_ (\x -> C.sendMessage x notification) l
+      notification = (Broadcast $ "CHAT:" ++ (show roomRef) ++ "\nCLIENT_NAME:" ++ clientName ++ "\nMESSAGE:" ++ clientName ++ " has left this chatroom.\n")
+
 
 -- >>
 
