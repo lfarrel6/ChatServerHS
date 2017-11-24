@@ -121,10 +121,10 @@ disconnectClient c@C.Client{..} server roomRef = do
      memberListing <- atomically $ readTVar $ members aRoom
      case Map.lookup clientID memberListing of
       Nothing   -> return ()
-      Just user -> atomically $ do
-       notify $ Map.elems memberListing
+      Just user -> do
+       atomically $ notify $ Map.elems memberListing
        let newList = Map.delete clientID memberListing
-       writeTVar (members aRoom) newList
+       atomically $ writeTVar (members aRoom) newList
      where
       notify l     = mapM_ (\x -> C.sendMessage x notification) l
       notification = (Broadcast $ "CHAT:" ++ (show roomRef) ++ "\nCLIENT_NAME:" ++ clientName ++ "\nMESSAGE:" ++ clientName ++ " has left this chatroom.\n")
