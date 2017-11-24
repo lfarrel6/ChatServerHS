@@ -118,9 +118,8 @@ disconnectClient c@C.Client{..} server roomRef = do
      case Map.lookup clientID memberListing of
       Nothing   -> return ()
       Just user -> do
-       notify $ Map.elems memberListing
-       let newList = Map.delete clientID memberListing
-       writeTVar (members aRoom) newList
+       let roomMembers = Map.elems memberListing
+       notify roomMembers >> writeTVar (members aRoom) (Map.delete clientID memberListing)
      where
       notify l     = mapM_ (\x -> C.sendMessage x notification) l
       notification = (Broadcast $ "CHAT:" ++ (show roomRef) ++ "\nCLIENT_NAME:" ++ clientName ++ "\nMESSAGE:" ++ clientName ++ " has left this chatroom.\n")
