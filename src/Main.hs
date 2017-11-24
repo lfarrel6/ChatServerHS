@@ -51,15 +51,15 @@ sendMsgArgs = 5
 --simple helo/kill handler
 
 simpleServer :: Handle -> Int -> IO ()
-simpleServer hdl port = do listen
+simpleServer hdl port = listen
  where
   listen = do 
    msg <- hGetLine hdl
    case words msg of
     ["HELO",text] -> do
-      reply $ "HELO " ++ msg ++ "\n134.226.44.141\nPort:" ++ (show port) ++ "\nStudentID:14317869\n"
+      reply $ "HELO " ++ msg ++ "\n134.226.44.141\nPort:" ++ show port ++ "\nStudentID:14317869\n"
       simpleServer hdl port
-    ["KILL_SERVICE"] -> putStrLn "rip server" >> return ()
+    ["KILL_SERVICE"] -> void $ putStrLn "rip server"
     _ -> putStrLn "Unknown command" >> simpleServer hdl port
     where
      reply = hPutStrLn hdl
@@ -77,6 +77,16 @@ userHandler serv sock port = do
 
 -- >>
 
+-- <<NotifyRoom
+notifyRoom :: Server -> Int -> Message -> IO Bool
+notifyRoom server roomRef msg = do
+  roomsList <- atomically $ readTVar server
+  let maybeRoom = Map.lookup roomRef roomsList
+  case maybeRoom of
+   Nothing    -> debug ("room does not exist " ++ show roomRef) >> return True
+   Just aRoom -> sendRoomMessage msg aRoom >> return True
+
+-- >>
 
 -- <<talk 
 
@@ -100,18 +110,11 @@ talk handle server port = do
            [["CLIENT_IP:",_],["PORT:",_],["CLIENT_NAME:",name]] -> do
              client <- newClient name (hash name) handle
              joinChatroom client server port roomName
-             let msgLines = "CHAT:"++(show $ (hash roomName))++"\nCLIENT_NAME:"++name++"\nMESSAGE:"++name ++ " has joined this chatroom.\n"
-             notifyRoom (hash roomName) $ Broadcast msgLines
-             runClient server port client >> return ()
+             let msgLines = "CHAT:"++(show $ hash roomName)++"\nCLIENT_NAME:"++name++"\nMESSAGE:"++name ++ " has joined this chatroom.\n"
+             notifyRoom server (hash roomName) $ Broadcast msgLines
+             void $ runClient server port client
 
            _ -> output "Unrecognized command" >> readOp
-           where
-            notifyRoom roomRef msg = do
-              roomsList <- atomically $ readTVar server
-              let maybeRoom = Map.lookup roomRef roomsList
-              case maybeRoom of
-               Nothing    -> debug ("room does not exist " ++ (show roomRef)) >> return True
-               Just aRoom -> sendRoomMessage msg aRoom >> return True
               
        _ -> output "Unreconized command" >> debug op >> readOp
        where
@@ -153,7 +156,7 @@ runClient serv port client@Client{..} = do
      msg <- readTChan clientSendChan
      return $ do 
        continue <- handleMessage serv port client msg
-       when continue $ server
+       when continue server
 
 -- >>
 
@@ -173,8 +176,8 @@ handleMessage server port client@Client{..} message =
       --join chatroom
 
       [["CLIENT_IP:",_],["PORT:",_],["CLIENT_NAME:",name]] -> do
-        let msgLines = "CHAT:"++(show $ (hash mainArg))++"\nCLIENT_NAME:"++clientName++"\nMESSAGE:"++clientName ++ " has joined this chatroom.\n"
-        joinChatroom client server port mainArg >> notifyRoom (hash mainArg) (Broadcast msgLines)
+        let msgLines = "CHAT:"++(show $ hash mainArg)++"\nCLIENT_NAME:"++clientName++"\nMESSAGE:"++clientName ++ " has joined this chatroom.\n"
+        joinChatroom client server port mainArg >> notifyRoom server (hash mainArg) (Broadcast msgLines)
 
       --leave chatroom
 
@@ -188,23 +191,17 @@ handleMessage server port client@Client{..} message =
 
       --send message
 
-      [["JOIN_ID:",id],["CLIENT_NAME:",name],("MESSAGE:":msgToSend),[]] -> do
-        notifyRoom (read mainArg :: Int) $ Broadcast ("CHAT: " ++ mainArg ++ "\nCLIENT_NAME: " ++ name ++ "\nMESSAGE: "++(unwords msgToSend)++"\n")
+      [["JOIN_ID:",id],["CLIENT_NAME:",name],("MESSAGE:":msgToSend),[]] ->
+        notifyRoom server (read mainArg :: Int) $ Broadcast ("CHAT: " ++ mainArg ++ "\nCLIENT_NAME: " ++ name ++ "\nMESSAGE: "++ unwords msgToSend ++"\n")
       
       --wildcard
       
       _ -> do
         atomically   $ sendMessage client $ Error "Error 1" "Unrecognised Args"
-        mapM_ debug $ map unwords msg
+        mapM_ (debug . unwords) msg
         return True
       where
        reply replyMsg = atomically $ sendMessage client replyMsg
-       notifyRoom roomRef msg = do
-         roomsList <- atomically $ readTVar server
-         let maybeRoom = Map.lookup roomRef roomsList
-         case maybeRoom of
-           Nothing    -> debug ("room does not exist " ++ (show roomRef)) >> return True
-           Just aRoom -> sendRoomMessage msg aRoom >> return True
   where
    output s = do debug (clientName ++ " receiving\\/\n" ++ s) >> hPutStrLn clientHandle s; return True
 
@@ -223,7 +220,7 @@ main = withSocketsDo $ do
  printf "Listening on port %d\n" port
  (handle, host, clientPort) <- accept sock
  printf "Accepted connection from %s: %s\n" host (show clientPort)
- forkFinally (simpleServer handle port) (\_ -> sClose sock >> return ())
+ forkFinally (simpleServer handle port) (\_ -> void (sClose sock))
  userHandler server sock port
  return ()
  where
