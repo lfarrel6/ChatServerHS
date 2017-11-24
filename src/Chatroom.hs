@@ -113,18 +113,18 @@ removeClient serv toRemove@C.Client{..} = do
 -- special case of leaving, requires different messages and checks membership before deleting
 
 disconnectClient :: C.Client -> Server -> Int -> IO ()
-disconnectClient c@C.Client{..} server roomRef = do
-   rooms <- atomically $ readTVar server
+disconnectClient c@C.Client{..} server roomRef = atomically $ do
+   rooms <- readTVar server
    case Map.lookup roomRef rooms of
     Nothing    -> return ()
     Just aRoom -> do
-     memberListing <- atomically $ readTVar $ members aRoom
+     memberListing <- readTVar $ members aRoom
      case Map.lookup clientID memberListing of
       Nothing   -> return ()
       Just user -> do
-       atomically $ notify $ Map.elems memberListing
+       notify $ Map.elems memberListing
        let newList = Map.delete clientID memberListing
-       atomically $ writeTVar (members aRoom) newList
+       writeTVar (members aRoom) newList
      where
       notify l     = mapM_ (\x -> C.sendMessage x notification) l
       notification = (Broadcast $ "CHAT:" ++ (show roomRef) ++ "\nCLIENT_NAME:" ++ clientName ++ "\nMESSAGE:" ++ clientName ++ " has left this chatroom.\n")
