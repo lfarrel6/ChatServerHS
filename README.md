@@ -13,8 +13,7 @@
 
 * Run the Server on the port number of your choice: `bash start.sh <port number>`
 
-### Current test score: 64
-### I do not feel that this reflects the standard of the Chat Server.
+### Current test score: 84
 
 # Send Protocols
 Action | Protocol
